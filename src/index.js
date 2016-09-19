@@ -5,6 +5,11 @@ import Redis from 'redis'
 import promisify from 'es6-promisify'
 import isEmoji from 'emoji-regex'
 
+const logWrap = (fn) => (foo) => {
+  console.log(foo)
+  fn()
+}
+
 const twitter = new Twitter({
   consumer_key: process.env.TWITTER_CONSUMER_KEY,
   consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
@@ -54,6 +59,7 @@ setInterval(async () => {
   try {
     const scores = await zrevrange(['emoji', 0, 9])
     const res = await post('statuses/update', {status: scores.join(' ')})
+    await flushdb()
     console.log(res)
   } catch (error) {
     console.log(error)
