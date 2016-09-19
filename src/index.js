@@ -5,7 +5,7 @@ import Redis from 'redis'
 import promisify from 'es6-promisify'
 import isEmoji from 'emoji-regex'
 
-const logWrap = (fn) => (foo) => {
+const logger = (fn) => (foo) => {
   console.log(foo)
   fn()
 }
@@ -25,9 +25,7 @@ const zscore = promisify(redis.zscore, redis)
 const zrevrange = promisify(redis.zrevrange, redis)
 
 const getEmoji = (string) => string && string.match(isEmoji()) || []
-
-// https://github.com/sindresorhus/skin-tone/blob/master/index.js
-const skinTones = ['🏻', '🏼', '🏽', '🏾', '🏿'] // yes there's skintones there
+const skinTones = ['🏻', '🏼', '🏽', '🏾', '🏿']
 const doTone = (emoji, i, emojis) => {
   return skinTones.includes(emojis[i + 1]) ? emoji + emojis[i + 1]
        : skinTones.includes(emoji)         ? ''
@@ -41,26 +39,20 @@ const save = async (emoji) => {
 
 const getTweets = () => {
   const stream = twitter.stream('statuses/sample')
-
   stream.on('data', (event) => {
     const emoji = getEmoji(event && event.text)
     emoji.map(doTone).filter((emoji) => emoji).forEach(save)
   })
-
-  stream.on('error', (error) => {
-    console.log(error)
-    getTweets()
-  })
-
+  stream.on('error', logger(getTweets))
   stream.on('end', getTweets)
 }
 
 setInterval(async () => {
   try {
     const scores = await zrevrange(['emoji', 0, 9])
-    const res = await post('statuses/update', {status: scores.join(' ')})
+    const tweet = await post('statuses/update', {status: scores.join(' ')})
     await flushdb()
-    console.log(res)
+    console.log(tweet && tweet.text)
   } catch (error) {
     console.log(error)
   }

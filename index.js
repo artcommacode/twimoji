@@ -22,7 +22,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { return step("next", value); }, function (err) { return step("throw", err); }); } } return step("next"); }); }; }
 
-var logWrap = function logWrap(fn) {
+var logger = function logger(fn) {
   return function (foo) {
     console.log(foo);
     fn();
@@ -46,9 +46,7 @@ var zrevrange = (0, _es6Promisify2.default)(redis.zrevrange, redis);
 var getEmoji = function getEmoji(string) {
   return string && string.match((0, _emojiRegex2.default)()) || [];
 };
-
-// https://github.com/sindresorhus/skin-tone/blob/master/index.js
-var skinTones = ['🏻', '🏼', '🏽', '🏾', '🏿']; // yes there's skintones there
+var skinTones = ['🏻', '🏼', '🏽', '🏾', '🏿'];
 var doTone = function doTone(emoji, i, emojis) {
   return skinTones.includes(emojis[i + 1]) ? emoji + emojis[i + 1] : skinTones.includes(emoji) ? '' : emoji;
 };
@@ -93,24 +91,18 @@ var save = function () {
 
 var getTweets = function getTweets() {
   var stream = twitter.stream('statuses/sample');
-
   stream.on('data', function (event) {
     var emoji = getEmoji(event && event.text);
     emoji.map(doTone).filter(function (emoji) {
       return emoji;
     }).forEach(save);
   });
-
-  stream.on('error', function (error) {
-    console.log(error);
-    getTweets();
-  });
-
+  stream.on('error', logger(getTweets));
   stream.on('end', getTweets);
 };
 
 setInterval(_asyncToGenerator(regeneratorRuntime.mark(function _callee2() {
-  var scores, res;
+  var scores, tweet;
   return regeneratorRuntime.wrap(function _callee2$(_context2) {
     while (1) {
       switch (_context2.prev = _context2.next) {
@@ -125,12 +117,12 @@ setInterval(_asyncToGenerator(regeneratorRuntime.mark(function _callee2() {
           return post('statuses/update', { status: scores.join(' ') });
 
         case 6:
-          res = _context2.sent;
+          tweet = _context2.sent;
           _context2.next = 9;
           return flushdb();
 
         case 9:
-          console.log(res);
+          console.log(tweet && tweet.text);
           _context2.next = 15;
           break;
 
