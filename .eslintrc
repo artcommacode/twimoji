@@ -3,7 +3,6 @@
   "plugins": ["flowtype"],
   "parserOptions": {
     "ecmaVersion": 6,
-    "sourceType": "module",
-  },
-  "rules": {}
+    "sourceType": "module"
+  }
 }
